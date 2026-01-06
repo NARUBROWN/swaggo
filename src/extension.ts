@@ -88,17 +88,6 @@ export function activate(context: vscode.ExtensionContext) {
     )
   );
 
-  const getActiveCursorCharacter = (
-    editor: vscode.TextEditor,
-    lineNumber: number
-  ) => {
-    const active = editor.selection.active;
-    if (active.line !== lineNumber) {
-      return undefined;
-    }
-    return active.character;
-  };
-
   context.subscriptions.push(
     vscode.workspace.onDidChangeTextDocument(async (event) => {
       const editor = vscode.window.activeTextEditor;
@@ -112,27 +101,21 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      const lineNumbers = new Set<number>();
+      const lineNumbers = new Map<number, number>();
       for (const change of event.contentChanges) {
-        if (!change.text.includes(")")) {
+        if (!/\r\n|\r|\n/.test(change.text)) {
           continue;
         }
         const startLine = change.range.start.line;
-        const newlineCount = change.text.split(/\r\n|\r|\n/).length - 1;
-        const endLine = startLine + newlineCount;
-
-        lineNumbers.add(startLine);
-        lineNumbers.add(endLine);
-        if (startLine > 0) {
-          lineNumbers.add(startLine - 1);
+        if (!lineNumbers.has(startLine)) {
+          lineNumbers.set(startLine, change.range.start.character);
         }
       }
 
-      for (const lineNumber of lineNumbers) {
+      for (const [lineNumber, cursorCharacter] of lineNumbers) {
         if (lineNumber < 0 || lineNumber >= event.document.lineCount) {
           continue;
         }
-        const cursorCharacter = getActiveCursorCharacter(editor, lineNumber);
         await processor.processLine(event.document, lineNumber, cursorCharacter);
       }
     })
