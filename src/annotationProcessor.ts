@@ -18,7 +18,7 @@ export class AnnotationProcessor {
   async processLine(document: vscode.TextDocument, lineNumber: number) {
     const line = document.lineAt(lineNumber);
     const text = line.text;
-    const annotationRegex = /^(\s*)#([A-Za-z]\w*)\((.*)\)\s*$/;
+    const annotationRegex = /^(\s*)[@#]([A-Za-z]\w*)\((.*)\)\s*$/;
     const match = text.match(annotationRegex);
 
     if (!match) {
@@ -109,8 +109,39 @@ export class AnnotationProcessor {
 
   private generateSwaggerComment(tag: string, args: string[]): string {
     let commentValue = args.join(" ");
+    const schemaKinds = new Set([
+      "object",
+      "array",
+      "string",
+      "number",
+      "integer",
+      "boolean"
+    ]);
 
     switch (tag) {
+      case "Summary":
+      case "Description":
+      case "ID":
+        if (args.length >= 1) {
+          commentValue = args.join(" ");
+        }
+        break;
+      case "Tags":
+        if (args.length >= 1) {
+          commentValue = args.length === 1 ? args[0] : args.join(",");
+        }
+        break;
+      case "Accept":
+      case "Produce":
+      case "Schemes":
+      case "Security":
+        if (args.length >= 1) {
+          commentValue = args.join(" ");
+        }
+        break;
+      case "Deprecated":
+        commentValue = "";
+        break;
       case "Param":
         if (args.length >= 5) {
           commentValue = `${args[1]} ${args[0]} ${args[2]} ${args[3]} ${this.quote(
@@ -118,9 +149,18 @@ export class AnnotationProcessor {
           )}`;
         }
         break;
+      case "Header":
+        if (args.length >= 4) {
+          commentValue = `${args[0]} {${args[1]}} ${args[2]} ${this.quote(args[3])}`;
+        } else if (args.length >= 3) {
+          commentValue = `${args[0]} {${args[1]}} ${args[2]}`;
+        }
+        break;
       case "Success":
       case "Failure":
-        if (args.length >= 3) {
+        if (args.length >= 4 && schemaKinds.has(args[1])) {
+          commentValue = `${args[0]} {${args[1]}} ${args[2]} ${this.quote(args[3])}`;
+        } else if (args.length >= 3) {
           commentValue = `${args[0]} {object} ${args[1]} ${this.quote(args[2])}`;
         } else if (args.length >= 2) {
           commentValue = `${args[0]} ${this.quote(args[1])}`;

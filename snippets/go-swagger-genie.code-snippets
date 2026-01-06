@@ -2,30 +2,30 @@
   "Swagger POST Template (virtual)": {
     "prefix": "swagpost",
     "body": [
-      "#Summary(\"${1:Summary}\")",
-      "#Description(\"${2:Description}\")",
-      "#Tags(\"${3:tag}\")",
-      "#Accept(\"${4:json}\")",
-      "#Produce(\"${5:json}\")",
-      "#Param(\"body\", \"body\", \"${6:dto.Request}\", true, \"${7:Request body}\")",
-      "#Success(200, \"${8:dto.Response}\", \"${9:OK}\")",
-      "#Failure(400, \"${10:echo.HTTPError}\", \"${11:Bad Request}\")",
-      "#Router(\"${12:/path}\", \"post\")"
+      "@Summary(\"${1:Summary}\")",
+      "@Description(\"${2:Description}\")",
+      "@Tags(\"${3:tag}\")",
+      "@Accept(\"${4:json}\")",
+      "@Produce(\"${5:json}\")",
+      "@Param(\"body\", \"body\", \"${6:dto.Request}\", true, \"${7:Request body}\")",
+      "@Success(200, \"${8:dto.Response}\", \"${9:OK}\")",
+      "@Failure(400, \"${10:echo.HTTPError}\", \"${11:Bad Request}\")",
+      "@Router(\"${12:/path}\", \"post\")"
     ],
     "description": "Virtual Swagger annotation block for POST endpoints."
   },
   "Swagger GET Template (virtual)": {
     "prefix": "swagget",
     "body": [
-      "#Summary(\"${1:Summary}\")",
-      "#Description(\"${2:Description}\")",
-      "#Tags(\"${3:tag}\")",
-      "#Accept(\"${4:json}\")",
-      "#Produce(\"${5:json}\")",
-      "#Param(\"query\", \"${6:id}\", \"${7:string}\", true, \"${8:Query param}\")",
-      "#Success(200, \"${9:dto.Response}\", \"${10:OK}\")",
-      "#Failure(404, \"${11:echo.HTTPError}\", \"${12:Not Found}\")",
-      "#Router(\"${13:/path}\", \"get\")"
+      "@Summary(\"${1:Summary}\")",
+      "@Description(\"${2:Description}\")",
+      "@Tags(\"${3:tag}\")",
+      "@Accept(\"${4:json}\")",
+      "@Produce(\"${5:json}\")",
+      "@Param(\"query\", \"${6:id}\", \"${7:string}\", true, \"${8:Query param}\")",
+      "@Success(200, \"${9:dto.Response}\", \"${10:OK}\")",
+      "@Failure(404, \"${11:echo.HTTPError}\", \"${12:Not Found}\")",
+      "@Router(\"${13:/path}\", \"get\")"
     ],
     "description": "Virtual Swagger annotation block for GET endpoints."
   }
