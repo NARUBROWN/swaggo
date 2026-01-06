@@ -114,6 +114,9 @@ export function activate(context: vscode.ExtensionContext) {
 
       const lineNumbers = new Set<number>();
       for (const change of event.contentChanges) {
+        if (!change.text.includes(")")) {
+          continue;
+        }
         const startLine = change.range.start.line;
         const newlineCount = change.text.split(/\r\n|\r|\n/).length - 1;
         const endLine = startLine + newlineCount;
@@ -132,27 +135,6 @@ export function activate(context: vscode.ExtensionContext) {
         const cursorCharacter = getActiveCursorCharacter(editor, lineNumber);
         await processor.processLine(event.document, lineNumber, cursorCharacter);
       }
-    })
-  );
-
-  context.subscriptions.push(
-    vscode.window.onDidChangeTextEditorSelection(async (event) => {
-      const editor = event.textEditor;
-      if (editor.document.languageId !== "go") {
-        return;
-      }
-      if (isApplyingEdit) {
-        return;
-      }
-      const lineNumber = editor.selection.active.line;
-      if (lineNumber < 0 || lineNumber >= editor.document.lineCount) {
-        return;
-      }
-      await processor.processLine(
-        editor.document,
-        lineNumber,
-        editor.selection.active.character
-      );
     })
   );
 }
