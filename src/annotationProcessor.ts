@@ -15,13 +15,25 @@ export class AnnotationProcessor {
     this.applyEdit = applyEdit;
   }
 
-  async processLine(document: vscode.TextDocument, lineNumber: number) {
+  async processLine(
+    document: vscode.TextDocument,
+    lineNumber: number,
+    cursorCharacter?: number
+  ) {
     const line = document.lineAt(lineNumber);
     const text = line.text;
     const annotationRegex = /^(\s*)[@#]([A-Za-z]\w*)\((.*)\)\s*$/;
     const match = text.match(annotationRegex);
 
     if (!match) {
+      this.setLineDiagnostics(document, lineNumber, []);
+      return;
+    }
+
+    if (
+      typeof cursorCharacter === "number" &&
+      this.isCursorInsideArgs(text, cursorCharacter)
+    ) {
       this.setLineDiagnostics(document, lineNumber, []);
       return;
     }
@@ -100,6 +112,15 @@ export class AnnotationProcessor {
       return trimmed.slice(1, -1).replace(/\\"/g, "\"");
     }
     return trimmed;
+  }
+
+  private isCursorInsideArgs(text: string, cursorCharacter: number): boolean {
+    const openIndex = text.indexOf("(");
+    const closeIndex = text.lastIndexOf(")");
+    if (openIndex === -1 || closeIndex === -1) {
+      return false;
+    }
+    return cursorCharacter > openIndex && cursorCharacter <= closeIndex;
   }
 
   private quote(value: string): string {

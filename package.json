@@ -3,7 +3,12 @@
   "displayName": "swaggo",
   "description": "GoSwagger Genie - virtual annotation helper for Go Swagger comments",
   "version": "0.0.1",
-  "publisher": "your-name",
+  "publisher": "narubrown",
+  "icon": "images/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NARUBROWN/swaggo"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -34,6 +39,6 @@
     "@typescript-eslint/eslint-plugin": "^6.19.0",
     "@typescript-eslint/parser": "^6.19.0",
     "eslint": "^8.56.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.9.3"
   }
 }
