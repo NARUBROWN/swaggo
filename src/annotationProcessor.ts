@@ -128,6 +128,45 @@ export class AnnotationProcessor {
     return `"${escaped}"`;
   }
 
+  private extractNamedArgs(
+    args: string[],
+    allowedKeys: Set<string>
+  ): { named: Record<string, string>; positional: string[] } {
+    const named: Record<string, string> = {};
+    const positional: string[] = [];
+
+    for (const arg of args) {
+      const equalIndex = arg.indexOf("=");
+      if (equalIndex === -1) {
+        positional.push(arg);
+        continue;
+      }
+
+      const key = arg.slice(0, equalIndex).trim().toLowerCase();
+      if (!allowedKeys.has(key)) {
+        positional.push(arg);
+        continue;
+      }
+
+      const value = this.unquote(arg.slice(equalIndex + 1).trim());
+      named[key] = value;
+    }
+
+    return { named, positional };
+  }
+
+  private getNamedValue(
+    named: Record<string, string>,
+    keys: string[]
+  ): string | undefined {
+    for (const key of keys) {
+      if (Object.prototype.hasOwnProperty.call(named, key)) {
+        return named[key];
+      }
+    }
+    return undefined;
+  }
+
   private generateSwaggerComment(tag: string, args: string[]): string {
     let commentValue = args.join(" ");
     const schemaKinds = new Set([
@@ -144,7 +183,35 @@ export class AnnotationProcessor {
       case "Description":
       case "ID":
         if (args.length >= 1) {
-          commentValue = args.join(" ");
+          const { named, positional } = this.extractNamedArgs(
+            args,
+            new Set(["summary", "description", "desc", "id", "value", "text"])
+          );
+          let namedValue: string | undefined;
+          if (tag === "Summary") {
+            namedValue = this.getNamedValue(named, [
+              "summary",
+              "description",
+              "desc",
+              "value",
+              "text"
+            ]);
+          } else if (tag === "Description") {
+            namedValue = this.getNamedValue(named, [
+              "description",
+              "desc",
+              "value",
+              "text"
+            ]);
+          } else {
+            namedValue = this.getNamedValue(named, ["id", "value", "text"]);
+          }
+
+          if (namedValue !== undefined) {
+            commentValue = namedValue;
+          } else {
+            commentValue = positional.join(" ");
+          }
         }
         break;
       case "Tags":
@@ -165,31 +232,131 @@ export class AnnotationProcessor {
         break;
       case "Param":
         if (args.length >= 5) {
-          commentValue = `${args[1]} ${args[0]} ${args[2]} ${args[3]} ${this.quote(
-            args[4]
-          )}`;
+          const { named, positional } = this.extractNamedArgs(
+            args,
+            new Set(["in", "name", "type", "required", "description", "desc"])
+          );
+          const inValue = this.getNamedValue(named, ["in"]) ?? positional[0];
+          const name = this.getNamedValue(named, ["name"]) ?? positional[1];
+          const type = this.getNamedValue(named, ["type"]) ?? positional[2];
+          const required =
+            this.getNamedValue(named, ["required"]) ?? positional[3];
+          const description =
+            this.getNamedValue(named, ["description", "desc"]) ?? positional[4];
+
+          if (
+            name !== undefined &&
+            inValue !== undefined &&
+            type !== undefined &&
+            required !== undefined &&
+            description !== undefined
+          ) {
+            commentValue = `${name} ${inValue} ${type} ${required} ${this.quote(
+              description
+            )}`;
+          }
         }
         break;
       case "Header":
-        if (args.length >= 4) {
-          commentValue = `${args[0]} {${args[1]}} ${args[2]} ${this.quote(args[3])}`;
-        } else if (args.length >= 3) {
-          commentValue = `${args[0]} {${args[1]}} ${args[2]}`;
+        if (args.length >= 3) {
+          const { named, positional } = this.extractNamedArgs(
+            args,
+            new Set(["code", "type", "name", "description", "desc"])
+          );
+          const code = this.getNamedValue(named, ["code"]) ?? positional[0];
+          const type = this.getNamedValue(named, ["type"]) ?? positional[1];
+          const name = this.getNamedValue(named, ["name"]) ?? positional[2];
+          const description =
+            this.getNamedValue(named, ["description", "desc"]) ?? positional[3];
+
+          if (code !== undefined && type !== undefined && name !== undefined) {
+            if (description !== undefined) {
+              commentValue = `${code} {${type}} ${name} ${this.quote(
+                description
+              )}`;
+            } else {
+              commentValue = `${code} {${type}} ${name}`;
+            }
+          }
         }
         break;
       case "Success":
       case "Failure":
-        if (args.length >= 4 && schemaKinds.has(args[1])) {
-          commentValue = `${args[0]} {${args[1]}} ${args[2]} ${this.quote(args[3])}`;
-        } else if (args.length >= 3) {
-          commentValue = `${args[0]} {object} ${args[1]} ${this.quote(args[2])}`;
-        } else if (args.length >= 2) {
-          commentValue = `${args[0]} ${this.quote(args[1])}`;
+        if (args.length >= 2) {
+          const { named, positional } = this.extractNamedArgs(
+            args,
+            new Set([
+              "code",
+              "schema",
+              "schematype",
+              "type",
+              "typepath",
+              "description",
+              "desc",
+              "message"
+            ])
+          );
+          const namedCode = this.getNamedValue(named, ["code"]);
+          let positionalIndex = 0;
+          const code = namedCode ?? positional[positionalIndex];
+          if (namedCode === undefined && code !== undefined) {
+            positionalIndex += 1;
+          }
+
+          const namedSchema = this.getNamedValue(named, [
+            "schema",
+            "schematype"
+          ]);
+          let schema = namedSchema;
+          if (schema === undefined) {
+            const candidate = positional[positionalIndex];
+            if (candidate !== undefined && schemaKinds.has(candidate)) {
+              schema = candidate;
+              positionalIndex += 1;
+            }
+          }
+
+          const namedTypePath = this.getNamedValue(named, ["type", "typepath"]);
+          let typePath = namedTypePath;
+          if (typePath === undefined) {
+            typePath = positional[positionalIndex];
+            if (typePath !== undefined) {
+              positionalIndex += 1;
+            }
+          }
+
+          const description =
+            this.getNamedValue(named, ["description", "desc", "message"]) ??
+            positional[positionalIndex];
+
+          if (code !== undefined) {
+            if (typePath !== undefined && description !== undefined) {
+              if (schema !== undefined && schemaKinds.has(schema)) {
+                commentValue = `${code} {${schema}} ${typePath} ${this.quote(
+                  description
+                )}`;
+              } else {
+                commentValue = `${code} {object} ${typePath} ${this.quote(
+                  description
+                )}`;
+              }
+            } else if (description !== undefined) {
+              commentValue = `${code} ${this.quote(description)}`;
+            }
+          }
         }
         break;
       case "Router":
         if (args.length >= 2) {
-          commentValue = `${args[0]} [${args[1]}]`;
+          const { named, positional } = this.extractNamedArgs(
+            args,
+            new Set(["path", "method"])
+          );
+          const path = this.getNamedValue(named, ["path"]) ?? positional[0];
+          const method = this.getNamedValue(named, ["method"]) ?? positional[1];
+          if (path !== undefined && method !== undefined) {
+            commentValue = `${path} [${method}]`;
+          }
         }
         break;
       default:

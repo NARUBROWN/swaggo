@@ -6,6 +6,7 @@ GoSwagger Genie for VS Code. `@Tag(...)` 또는 `#Tag(...)` 형태의 가상 어
 
 - 가상 어노테이션 문법 지원: `@Summary("...")`, `#Param(...)` 등.
 - 자동 변환: 입력 즉시 `// @Tag ...` 형식으로 변환.
+- Swagger 주석 렌더링: `// @Tag ...` 주석을 가상 어노테이션 형태로 표시.
 - 기본 패턴 진단: `package.Type` 또는 `package.Function` 형태를 정규식으로 검사.
 - 스니펫 제공: 자주 쓰는 GET/POST 템플릿.
 
@@ -19,9 +20,9 @@ GoSwagger Genie for VS Code. `@Tag(...)` 또는 `#Tag(...)` 형태의 가상 어
 @Tags("classroom", "admin")
 @Accept("json")
 @Produce("json")
-@Param("body", "body", "dto.CreateClassroomRequest", true, "클래스 생성 요청")
-@Success(200, "dto.ClassroomResponse", "클래스 생성 성공")
-@Failure(400, "echo.HTTPError", "잘못된 요청")
+@Param(in="body", name="body", type=dto.CreateClassroomRequest, required=true, desc="클래스 생성 요청")
+@Success(code=200, type=dto.ClassroomResponse, desc="클래스 생성 성공")
+@Failure(code=400, type=echo.HTTPError, desc="잘못된 요청")
 @Router("/classrooms", "post")
 ```
 
@@ -60,7 +61,7 @@ GoSwagger Genie for VS Code. `@Tag(...)` 또는 `#Tag(...)` 형태의 가상 어
 형식:
 
 ```txt
-@Param("in", "name", "type", required, "description")
+@Param("in", "name", type, required, "description")
 ```
 
 변환:
@@ -72,11 +73,17 @@ GoSwagger Genie for VS Code. `@Tag(...)` 또는 `#Tag(...)` 형태의 가상 어
 예시:
 
 ```txt
-@Param("query", "id", "string", true, "사용자 ID")
+@Param("query", "id", string, true, "사용자 ID")
 ```
 
 ```txt
 // @Param id query string true "사용자 ID"
+```
+
+키=값 형태도 지원합니다 (순서 무관):
+
+```txt
+@Param(in="query", name="id", type=string, required=true, desc="사용자 ID")
 ```
 
 ### Success / Failure
@@ -84,8 +91,8 @@ GoSwagger Genie for VS Code. `@Tag(...)` 또는 `#Tag(...)` 형태의 가상 어
 형식:
 
 ```txt
-@Success(code, "typePath", "description")
-@Failure(code, "typePath", "description")
+@Success(code, typePath, "description")
+@Failure(code, typePath, "description")
 ```
 
 변환:
@@ -98,7 +105,7 @@ GoSwagger Genie for VS Code. `@Tag(...)` 또는 `#Tag(...)` 형태의 가상 어
 스키마 타입을 직접 지정할 수도 있습니다.
 
 ```txt
-@Success(200, "array", "dto.User", "OK")
+@Success(200, "array", dto.User, "OK")
 ```
 
 ```txt
@@ -107,12 +114,19 @@ GoSwagger Genie for VS Code. `@Tag(...)` 또는 `#Tag(...)` 형태의 가상 어
 
 지원하는 스키마 타입: `object`, `array`, `string`, `number`, `integer`, `boolean`
 
+키=값 형태:
+
+```txt
+@Success(code=200, type=dto.User, desc="OK")
+@Success(code=200, schema="array", type=dto.User, desc="OK")
+```
+
 ### Header
 
 형식:
 
 ```txt
-@Header(code, "type", "name", "description")
+@Header(code, type, "name", "description")
 ```
 
 변환:
@@ -124,11 +138,17 @@ GoSwagger Genie for VS Code. `@Tag(...)` 또는 `#Tag(...)` 형태의 가상 어
 예시:
 
 ```txt
-@Header(200, "string", "Location", "redirect url")
+@Header(200, string, "Location", "redirect url")
 ```
 
 ```txt
 // @Header 200 {string} Location "redirect url"
+```
+
+키=값 형태:
+
+```txt
+@Header(code=200, type=string, name="Location", desc="redirect url")
 ```
 
 ### Router
@@ -155,12 +175,20 @@ GoSwagger Genie for VS Code. `@Tag(...)` 또는 `#Tag(...)` 형태의 가상 어
 // @Router /classrooms [post]
 ```
 
+키=값 형태:
+
+```txt
+@Router(path="/classrooms", method="post")
+```
+
 ## 어노테이션 파싱 규칙
 
 - `@Tag(...)` 또는 `#Tag(...)` 모두 지원합니다.
 - 문자열은 큰따옴표로 감싸는 것을 권장합니다.
 - 콤마로 인자를 구분합니다.
 - `true/false`, 숫자, 문자열이 혼합되어도 처리합니다.
+- `Summary`, `Description`, `ID`, `Param`, `Success/Failure`, `Header`, `Router`는 `key=value` 형식도 지원합니다. (키는 대소문자 무시)
+- `description`/`desc` 모두 인식하며 렌더링은 `desc`로 표시됩니다.
 
 ## 진단(Diagnostics)
 
@@ -183,3 +211,4 @@ GoSwagger Genie for VS Code. `@Tag(...)` 또는 `#Tag(...)` 형태의 가상 어
 
 - 현재는 입력 즉시 변환됩니다.
 - 필요 시 태그별 포맷 규칙을 추가로 확장할 수 있습니다.
+- Swagger 주석 렌더링은 에디터에서만 보이며 파일 내용은 변경되지 않습니다.

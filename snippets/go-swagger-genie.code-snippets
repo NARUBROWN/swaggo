@@ -7,9 +7,9 @@
       "@Tags(\"${3:tag}\")",
       "@Accept(\"${4:json}\")",
       "@Produce(\"${5:json}\")",
-      "@Param(\"body\", \"body\", \"${6:dto.Request}\", true, \"${7:Request body}\")",
-      "@Success(200, \"${8:dto.Response}\", \"${9:OK}\")",
-      "@Failure(400, \"${10:echo.HTTPError}\", \"${11:Bad Request}\")",
+      "@Param(in=\"body\", name=\"body\", type=${6:dto.Request}, required=true, desc=\"${7:Request body}\")",
+      "@Success(code=200, type=${8:dto.Response}, desc=\"${9:OK}\")",
+      "@Failure(code=400, type=${10:echo.HTTPError}, desc=\"${11:Bad Request}\")",
       "@Router(\"${12:/path}\", \"post\")"
     ],
     "description": "Virtual Swagger annotation block for POST endpoints."
@@ -22,9 +22,9 @@
       "@Tags(\"${3:tag}\")",
       "@Accept(\"${4:json}\")",
       "@Produce(\"${5:json}\")",
-      "@Param(\"query\", \"${6:id}\", \"${7:string}\", true, \"${8:Query param}\")",
-      "@Success(200, \"${9:dto.Response}\", \"${10:OK}\")",
-      "@Failure(404, \"${11:echo.HTTPError}\", \"${12:Not Found}\")",
+      "@Param(in=\"query\", name=\"${6:id}\", type=${7:string}, required=true, desc=\"${8:Query param}\")",
+      "@Success(code=200, type=${9:dto.Response}, desc=\"${10:OK}\")",
+      "@Failure(code=404, type=${11:echo.HTTPError}, desc=\"${12:Not Found}\")",
       "@Router(\"${13:/path}\", \"get\")"
     ],
     "description": "Virtual Swagger annotation block for GET endpoints."
