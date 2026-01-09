@@ -231,29 +231,89 @@ export class AnnotationProcessor {
         commentValue = "";
         break;
       case "Param":
-        if (args.length >= 5) {
+        {
           const { named, positional } = this.extractNamedArgs(
             args,
             new Set(["in", "name", "type", "required", "description", "desc"])
           );
-          const inValue = this.getNamedValue(named, ["in"]) ?? positional[0];
-          const name = this.getNamedValue(named, ["name"]) ?? positional[1];
-          const type = this.getNamedValue(named, ["type"]) ?? positional[2];
-          const required =
-            this.getNamedValue(named, ["required"]) ?? positional[3];
-          const description =
-            this.getNamedValue(named, ["description", "desc"]) ?? positional[4];
+
+          type ParamValues = {
+            name?: string;
+            inValue?: string;
+            type?: string;
+            required?: string;
+            description?: string;
+          };
+
+          const resolved: ParamValues = {
+            name: this.getNamedValue(named, ["name"]),
+            inValue: this.getNamedValue(named, ["in"]),
+            type: this.getNamedValue(named, ["type"]),
+            required: this.getNamedValue(named, ["required"]),
+            description: this.getNamedValue(named, ["description", "desc"])
+          };
+
+          let orderedKeys: (keyof ParamValues)[] = [
+            "name",
+            "inValue",
+            "type",
+            "required",
+            "description"
+          ];
+          if (!resolved.name && !resolved.inValue && positional.length >= 2) {
+            const paramInValues = new Set([
+              "query",
+              "path",
+              "header",
+              "body",
+              "formdata"
+            ]);
+            const firstIsIn = paramInValues.has(
+              positional[0].toLowerCase()
+            );
+            const secondIsIn = paramInValues.has(
+              positional[1].toLowerCase()
+            );
+            if (firstIsIn && !secondIsIn) {
+              orderedKeys = [
+                "inValue",
+                "name",
+                "type",
+                "required",
+                "description"
+              ];
+            }
+          }
+
+          let positionalIndex = 0;
+          for (const key of orderedKeys) {
+            if (resolved[key] !== undefined) {
+              continue;
+            }
+            if (positionalIndex >= positional.length) {
+              break;
+            }
+            if (key === "description") {
+              resolved.description = positional
+                .slice(positionalIndex)
+                .join(", ");
+              positionalIndex = positional.length;
+              break;
+            }
+            resolved[key] = positional[positionalIndex];
+            positionalIndex += 1;
+          }
 
           if (
-            name !== undefined &&
-            inValue !== undefined &&
-            type !== undefined &&
-            required !== undefined &&
-            description !== undefined
+            resolved.name !== undefined &&
+            resolved.inValue !== undefined &&
+            resolved.type !== undefined &&
+            resolved.required !== undefined &&
+            resolved.description !== undefined
           ) {
-            commentValue = `${name} ${inValue} ${type} ${required} ${this.quote(
-              description
-            )}`;
+            commentValue = `${resolved.name} ${resolved.inValue} ${
+              resolved.type
+            } ${resolved.required} ${this.quote(resolved.description)}`;
           }
         }
         break;
@@ -303,21 +363,47 @@ export class AnnotationProcessor {
             positionalIndex += 1;
           }
 
-          const namedSchema = this.getNamedValue(named, [
-            "schema",
-            "schematype"
-          ]);
-          let schema = namedSchema;
-          if (schema === undefined) {
+          const namedSchemaValue = this.getNamedValue(named, ["schema"]);
+          const namedSchemaType = this.getNamedValue(named, ["schematype"]);
+          const namedTypeValue = this.getNamedValue(named, ["type"]);
+          const namedTypePath = this.getNamedValue(named, ["typepath"]);
+
+          let schemaType = namedSchemaType;
+          let typePath = namedTypePath;
+          const typeValueIsSchemaKind =
+            namedTypeValue !== undefined && schemaKinds.has(namedTypeValue);
+          const schemaValueIsSchemaKind =
+            namedSchemaValue !== undefined && schemaKinds.has(namedSchemaValue);
+
+          if (namedTypeValue !== undefined) {
+            if (schemaType === undefined && typeValueIsSchemaKind) {
+              schemaType = namedTypeValue;
+            } else if (typePath === undefined) {
+              typePath = namedTypeValue;
+            }
+          }
+
+          if (namedSchemaValue !== undefined) {
+            if (
+              schemaType === undefined &&
+              schemaValueIsSchemaKind &&
+              !typeValueIsSchemaKind &&
+              namedTypePath === undefined
+            ) {
+              schemaType = namedSchemaValue;
+            } else if (typePath === undefined) {
+              typePath = namedSchemaValue;
+            }
+          }
+
+          if (schemaType === undefined) {
             const candidate = positional[positionalIndex];
             if (candidate !== undefined && schemaKinds.has(candidate)) {
-              schema = candidate;
+              schemaType = candidate;
               positionalIndex += 1;
             }
           }
 
-          const namedTypePath = this.getNamedValue(named, ["type", "typepath"]);
-          let typePath = namedTypePath;
           if (typePath === undefined) {
             typePath = positional[positionalIndex];
             if (typePath !== undefined) {
@@ -327,25 +413,33 @@ export class AnnotationProcessor {
 
           const description =
             this.getNamedValue(named, ["description", "desc", "message"]) ??
-            positional[positionalIndex];
+            (positionalIndex < positional.length
+              ? positional.slice(positionalIndex).join(", ")
+              : undefined);
 
           if (code !== undefined) {
             if (typePath !== undefined && description !== undefined) {
-              if (schema !== undefined && schemaKinds.has(schema)) {
-                commentValue = `${code} {${schema}} ${typePath} ${this.quote(
-                  description
-                )}`;
-              } else {
-                commentValue = `${code} {object} ${typePath} ${this.quote(
-                  description
-                )}`;
-              }
+              const schemaKind =
+                schemaType !== undefined && schemaKinds.has(schemaType)
+                  ? schemaType
+                  : "object";
+              commentValue = `${code} {${schemaKind}} ${typePath} ${this.quote(
+                description
+              )}`;
             } else if (typePath !== undefined) {
-              if (schema !== undefined && schemaKinds.has(schema)) {
-                commentValue = `${code} {${schema}} ${typePath}`;
-              } else {
-                commentValue = `${code} {object} ${typePath}`;
-              }
+              const schemaKind =
+                schemaType !== undefined && schemaKinds.has(schemaType)
+                  ? schemaType
+                  : "object";
+              commentValue = `${code} {${schemaKind}} ${typePath}`;
+            } else if (
+              schemaType !== undefined &&
+              schemaKinds.has(schemaType) &&
+              description !== undefined
+            ) {
+              commentValue = `${code} {${schemaType}} ${this.quote(
+                description
+              )}`;
             } else if (description !== undefined) {
               commentValue = `${code} ${this.quote(description)}`;
             }

@@ -43,13 +43,17 @@ export class SwaggerCommentRenderer {
       }
 
       const contentText = parsed.indent + annotation;
+      const hoverMessage = new vscode.MarkdownString(
+        `\`\`\`go\n${line.text}\n\`\`\``
+      );
       annotationDecorations.push({
-        range: new vscode.Range(line.range.start, line.range.start),
+        range: line.range,
         renderOptions: {
           before: {
             contentText
           }
-        }
+        },
+        hoverMessage
       });
       hiddenRanges.push(line.range);
     }
@@ -169,8 +173,8 @@ export class SwaggerCommentRenderer {
     const description = parts.slice(4).join(" ");
 
     const segments = [
-      `in=${this.quote(inValue)}`,
       `name=${this.quote(name)}`,
+      `in=${this.quote(inValue)}`,
       `type=${type}`,
       `required=${required}`
     ];
@@ -230,11 +234,11 @@ export class SwaggerCommentRenderer {
     }
 
     const segments = [`code=${code}`];
-    if (schema && schema !== "object") {
-      segments.push(`schema=${this.quote(schema)}`);
+    if (schema) {
+      segments.push(`type=${schema}`);
     }
     if (typePath) {
-      segments.push(`type=${typePath}`);
+      segments.push(`schema=${typePath}`);
     }
     if (description) {
       segments.push(`desc=${this.quote(description)}`);

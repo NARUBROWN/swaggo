@@ -20,9 +20,9 @@ GoSwagger Genie for VS Code. `@Tag(...)` 또는 `#Tag(...)` 형태의 가상 어
 @Tags("classroom", "admin")
 @Accept("json")
 @Produce("json")
-@Param(in="body", name="body", type=dto.CreateClassroomRequest, required=true, desc="클래스 생성 요청")
-@Success(code=200, type=dto.ClassroomResponse, desc="클래스 생성 성공")
-@Failure(code=400, type=echo.HTTPError, desc="잘못된 요청")
+@Param(name="body", in="body", type=dto.CreateClassroomRequest, required=true, desc="클래스 생성 요청")
+@Success(code=200, schema=dto.ClassroomResponse, desc="클래스 생성 성공")
+@Failure(code=400, schema=echo.HTTPError, desc="잘못된 요청")
 @Router("/classrooms", "post")
 ```
 
@@ -61,7 +61,7 @@ GoSwagger Genie for VS Code. `@Tag(...)` 또는 `#Tag(...)` 형태의 가상 어
 형식:
 
 ```txt
-@Param("in", "name", type, required, "description")
+@Param("name", "in", type, required, "description")
 ```
 
 변환:
@@ -73,7 +73,7 @@ GoSwagger Genie for VS Code. `@Tag(...)` 또는 `#Tag(...)` 형태의 가상 어
 예시:
 
 ```txt
-@Param("query", "id", string, true, "사용자 ID")
+@Param("id", "query", string, true, "사용자 ID")
 ```
 
 ```txt
@@ -83,7 +83,7 @@ GoSwagger Genie for VS Code. `@Tag(...)` 또는 `#Tag(...)` 형태의 가상 어
 키=값 형태도 지원합니다 (순서 무관):
 
 ```txt
-@Param(in="query", name="id", type=string, required=true, desc="사용자 ID")
+@Param(name="id", in="query", type=string, required=true, desc="사용자 ID")
 ```
 
 ### Success / Failure
@@ -91,18 +91,18 @@ GoSwagger Genie for VS Code. `@Tag(...)` 또는 `#Tag(...)` 형태의 가상 어
 형식:
 
 ```txt
-@Success(code, typePath, "description")
-@Failure(code, typePath, "description")
+@Success(code, schema, "description")
+@Failure(code, schema, "description")
 ```
 
 변환:
 
 ```txt
-// @Success code {object} typePath "description"
-// @Failure code {object} typePath "description"
+// @Success code {object} schema "description"
+// @Failure code {object} schema "description"
 ```
 
-스키마 타입을 직접 지정할 수도 있습니다.
+본문 타입을 직접 지정할 수도 있습니다.
 
 ```txt
 @Success(200, "array", dto.User, "OK")
@@ -112,13 +112,13 @@ GoSwagger Genie for VS Code. `@Tag(...)` 또는 `#Tag(...)` 형태의 가상 어
 // @Success 200 {array} dto.User "OK"
 ```
 
-지원하는 스키마 타입: `object`, `array`, `string`, `number`, `integer`, `boolean`
+지원하는 본문 타입: `object`, `array`, `string`, `number`, `integer`, `boolean`
 
 키=값 형태:
 
 ```txt
-@Success(code=200, type=dto.User, desc="OK")
-@Success(code=200, schema="array", type=dto.User, desc="OK")
+@Success(code=200, schema=dto.User, desc="OK")
+@Success(code=200, type=array, schema=dto.User, desc="OK")
 ```
 
 ### Header
