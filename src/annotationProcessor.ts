@@ -340,6 +340,12 @@ export class AnnotationProcessor {
                   description
                 )}`;
               }
+            } else if (typePath !== undefined) {
+              if (schema !== undefined && schemaKinds.has(schema)) {
+                commentValue = `${code} {${schema}} ${typePath}`;
+              } else {
+                commentValue = `${code} {object} ${typePath}`;
+              }
             } else if (description !== undefined) {
               commentValue = `${code} ${this.quote(description)}`;
             }

@@ -165,6 +165,35 @@ export function activate(context: vscode.ExtensionContext) {
     "Router"
   ];
 
+  const annotationAttributeMap: Record<string, string[]> = {
+    summary: ["summary", "description", "desc", "value", "text"],
+    description: ["description", "desc", "value", "text"],
+    id: ["id", "value", "text"],
+    param: ["in", "name", "type", "required", "description", "desc"],
+    header: ["code", "type", "name", "description", "desc"],
+    success: [
+      "code",
+      "schema",
+      "schematype",
+      "type",
+      "typepath",
+      "description",
+      "desc",
+      "message"
+    ],
+    failure: [
+      "code",
+      "schema",
+      "schematype",
+      "type",
+      "typepath",
+      "description",
+      "desc",
+      "message"
+    ],
+    router: ["path", "method"]
+  };
+
   const getAnnotationPrefixRange = (
     document: vscode.TextDocument,
     position: vscode.Position
@@ -187,11 +216,130 @@ export function activate(context: vscode.ExtensionContext) {
     );
   };
 
+  const getAnnotationArgContext = (
+    document: vscode.TextDocument,
+    position: vscode.Position
+  ): { tag: string; range: vscode.Range } | undefined => {
+    const lineText = document.lineAt(position.line).text;
+    const beforeCursor = lineText.slice(0, position.character);
+    const lastAt = beforeCursor.lastIndexOf("@");
+    const lastHash = beforeCursor.lastIndexOf("#");
+    const prefixIndex = Math.max(lastAt, lastHash);
+    if (prefixIndex < 0) {
+      return undefined;
+    }
+
+    const afterPrefix = lineText.slice(prefixIndex + 1);
+    const nameMatch = afterPrefix.match(/^([A-Za-z]\w*)\s*\(/);
+    if (!nameMatch) {
+      return undefined;
+    }
+
+    const tag = nameMatch[1];
+    const openParenIndex =
+      prefixIndex + 1 + nameMatch[0].lastIndexOf("(");
+    if (position.character <= openParenIndex) {
+      return undefined;
+    }
+
+    const beforeArgs = lineText.slice(openParenIndex + 1, position.character);
+    let inQuotes = false;
+    let escaped = false;
+    let segmentHasEquals = false;
+
+    for (const ch of beforeArgs) {
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (ch === "\\") {
+        escaped = true;
+        continue;
+      }
+      if (ch === "\"") {
+        inQuotes = !inQuotes;
+        continue;
+      }
+      if (inQuotes) {
+        continue;
+      }
+      if (ch === ")") {
+        return undefined;
+      }
+      if (ch === ",") {
+        segmentHasEquals = false;
+        continue;
+      }
+      if (ch === "=") {
+        segmentHasEquals = true;
+      }
+    }
+
+    if (inQuotes || segmentHasEquals) {
+      return undefined;
+    }
+
+    let wordStart = position.character;
+    while (wordStart > openParenIndex + 1) {
+      const prevChar = lineText[wordStart - 1];
+      if (!/\s/.test(prevChar)) {
+        break;
+      }
+      wordStart -= 1;
+    }
+
+    while (wordStart > openParenIndex + 1) {
+      const prevChar = lineText[wordStart - 1];
+      if (!/[\w]/.test(prevChar)) {
+        break;
+      }
+      wordStart -= 1;
+    }
+
+    return {
+      tag,
+      range: new vscode.Range(
+        new vscode.Position(position.line, wordStart),
+        position
+      )
+    };
+  };
+
+  const buildAttributeCompletionItems = (
+    tag: string,
+    range: vscode.Range
+  ): vscode.CompletionItem[] | undefined => {
+    const attributes = annotationAttributeMap[tag.toLowerCase()];
+    if (!attributes || attributes.length === 0) {
+      return undefined;
+    }
+
+    return attributes.map((attribute, index) => {
+      const item = new vscode.CompletionItem(
+        attribute,
+        vscode.CompletionItemKind.Property
+      );
+      item.insertText = `${attribute}=`;
+      item.range = range;
+      item.detail = `@${tag} attribute`;
+      item.sortText = `${index}`.padStart(2, "0");
+      return item;
+    });
+  };
+
   context.subscriptions.push(
     vscode.languages.registerCompletionItemProvider(
       "go",
       {
         provideCompletionItems(document, position) {
+          const argContext = getAnnotationArgContext(document, position);
+          if (argContext) {
+            return buildAttributeCompletionItems(
+              argContext.tag,
+              argContext.range
+            );
+          }
+
           const range = getAnnotationPrefixRange(document, position);
           if (!range) {
             return undefined;
@@ -211,7 +359,9 @@ export function activate(context: vscode.ExtensionContext) {
         }
       },
       "@",
-      "#"
+      "#",
+      "(",
+      ","
     )
   );
 
