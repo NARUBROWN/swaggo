@@ -1,6 +1,9 @@
-# swaggo
-
+# Swaggo - GoSwagger Genie for VS code.
+<img src="./images/icon.png" width="120" /> <br/>
 GoSwagger Genie for VS Code. `@Tag(...)` 또는 `#Tag(...)` 형태의 가상 어노테이션을 입력하면, 자동으로 Go Swagger 주석(`// @Tag ...`)으로 변환합니다. 에디터에서는 Swagger 주석을 다시 가상 어노테이션 형태로 렌더링해 읽기 쉽고 수정하기 쉽습니다.
+
+⚠️ 주의: 이 도구는 Go에 어노테이션을 도입하지 않습니다.
+표준 swaggo 주석으로 변환되는 에디터 친화적인 입력 문법만을 제공합니다.
 
 ## 목차
 
@@ -16,15 +19,19 @@ GoSwagger Genie for VS Code. `@Tag(...)` 또는 `#Tag(...)` 형태의 가상 어
 
 ## 소개
 
+
 기존의 `// @Param ...` 주석은 인자 순서를 기억해야 하고, 값이 무엇을 의미하는지 매번 해석해야 했습니다. `swaggo`는 `@어노테이션(키=값)` 문법을 제공해 의미를 명확히 하고, IDE의 타입 추론과 자동완성으로 구조체/스키마를 빠르게 작성할 수 있게 합니다. 또한 마우스 호버로 변환된 Swagger 주석을 확인할 수 있어 결과를 즉시 검증할 수 있습니다.
 
 ## 주요 기능
-
+- 주석 렌더링: `// @Tag ...` 주석을 가상 어노테이션 형태로 표시.
 - 명시적 문법: `@어노테이션(키=값)`으로 어떤 값인지 한눈에 파악.
 - IDE 친화성: `@어노테이션` 이름 자동완성, `@어노테이션(키)` 자동완성, 타입 추론 지원.
+- 가상 어노테이션 수정: 가상 `@어노테이션`을 직접 수정할 수 있음
+![Image](./images/annotation_edit.gif)
 - 즉시 변환: 입력 즉시 `// @Tag ...` 형식으로 변환.
-- 주석 렌더링: `// @Tag ...` 주석을 가상 어노테이션 형태로 표시.
+![Image](./images/annotation_feature_demo.gif)
 - 호버 미리보기: 마우스를 올리면 변환된 Swagger 주석을 확인.
+![Image](./images/hover_result_preview.gif)
 - 기본 패턴 진단: `package.Type` 또는 `package.Function` 형태를 정규식으로 검사.
 - 스니펫 제공: 자주 쓰는 GET/POST 템플릿.
 
